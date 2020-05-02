@@ -1,0 +1,67 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var AOI = 
+    /* color: #d63000 */
+    /* shown: false */
+    /* displayProperties: [
+      {
+        "type": "rectangle" 
+      }
+    ] */
+    ee.Geometry.Polygon(
+        [[[74.36315084523306, 35.922881602100546],
+          [74.36315084523306, 35.89312729963357],
+          [74.41379095143424, 35.89312729963357],
+          [74.41379095143424, 35.922881602100546]]], null, false);
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+//The following scripts is part of AKAH E-Learning Repository
+//This code will calculate NDVI using two methods on LANDSAT-8 Image
+
+
+// Get Image using Scene ID
+var lc8_image = ee.Image('LANDSAT/LC08/C01/T1_TOA/LC08_150035_20191204'); //Create varable for Iandsat 8 image
+Map.addLayer(lc8_image);
+Map.centerObject(lc8_image, 8);
+print(lc8_image);
+
+//extracting metadata
+var when = lc8_image.get('DATE_ACQUIRED');
+var row = lc8_image.get('WRS_ROW');
+var path = lc8_image.get('WRS_PATH');
+
+print('Date of image acquisition',when);
+print('Image WRS Row', row);
+print('Image WRS Path', path);
+
+// Calculate NDVI  
+var ndvi = lc8_image.normalizedDifference(['B5','B4']);
+
+// 2nd method to compute NDVI
+var nir = lc8_image.select('B5'); //select needed bands for NDVI calculations
+var swir = lc8_image.select('B4');
+var ndvi2 = nir.subtract(swir).divide(nir.add(swir)).rename('NDWI'); //Calculate NDVI
+
+// Visualization parameters 
+var visParams = {bands: ['B4', 'B3', 'B2'], max: 3048, gamma: 1};
+var visParams_ndvi = {min: -0.2, max: 0.8, palette: 'FFFFFF, CE7E45, DF923D, F1B555, FCD163, 99B718, 74A901, 66A000, 529400,' +
+    '3E8601, 207401, 056201, 004C00, 023B01, 012E01, 011D01, 011301'};
+
+
+//DISPLAY
+Map.addLayer(lc8_image, {bands: ['B4', 'B3', 'B2']}, 'Landsat 8 scene composite');
+
+//Green is high NDVI
+Map.addLayer(ndvi, visParams_ndvi, 'NDVI image');
+Map.addLayer(ndvi2, visParams_ndvi, 'NDVI2 image');
+
+print("BRAVO Completed");
+
+// Export image
+Export.image.toDrive({
+  image: ndvi,
+  description: 'NDVI Landsat 8',
+  scale: 28,
+  maxPixels: 2e11,
+  folder: 'GEE',
+  fileFormat: 'GeoTIFF',
+  region: ndvi.clip(AOI),
+});

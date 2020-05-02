@@ -1,0 +1,72 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var GB = ee.FeatureCollection("users/gomalamin/GB"),
+    visParams_evi = {"opacity":1,"bands":["constant"],"min":-0.2,"max":0.8,"palette":["ff8014","ce9a24","dfdb69","eff175","f1fc99","7db720","74a901"]};
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+Map.centerObject(GB, 7);
+//Define criteria for image collection 
+var collection = ee.ImageCollection('COPERNICUS/S2_SR') // 
+  .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 24)) // 
+  // .filterDate('2019-04-1' ,'2019-7-30')
+  .filterBounds(GB)
+  .filter(ee.Filter.calendarRange(2014,2019,'year'))///new 
+  .filter(ee.Filter.calendarRange(4,8,'month'));///new 
+  
+//////////////\\\///////
+print('Filtered (by date) Image Count: ', collection.size());
+print(collection) ;// image collection metadata 
+
+//get a nice blended-looking mosaic from all images in above ImageCollection
+//reducing all pixcels to one  (or bands of pixels in a layer stack). 
+
+var medianpixels = collection.median(); //mean can also be used 
+
+var medianpixelsclipped = medianpixels.clip(GB).divide(10000);    
+
+// Now visualise the mosaic as a natural colour image. 
+Map.addLayer(medianpixelsclipped, {bands: ['B4', 'B3', 'B2'], min: 0, max: 1, gamma: 1.5},
+'Sentinel_2 mosaic');
+////////Band combinations for sentinel-2 //////////
+// Natural Color (B4, B3, B2)
+// Color Infrared (B8, B4, B3)
+// Short-Wave Infrared (B12, B8A, B4)
+// Agriculture (B11, B8, B2)
+// Geology (B12, B11, B2)
+// Bathymetric (B4, B3, B1)
+// Vegetation Index (B8-B4)/(B8+B4)
+// Moisture Index (B8A-B11)/(B8A+B11)
+// Water Index (B8-B11)/(B8+B11)
+
+// Calculate NDVI  
+var ndvi = medianpixelsclipped.normalizedDifference(['B8','B4']);
+// Calculate NDWI  
+var ndwi = medianpixelsclipped.normalizedDifference(['B8','B11']); //NIR and SWIR
+
+var evi = medianpixelsclipped.expression(
+    '2.5 * (nir - red) / (nir + 6 * red - 7.5 * blue + 1)',
+    {
+        red: medianpixelsclipped.select('B4'),    // 620-670nm, RED
+        nir: medianpixelsclipped.select('B8'),    // 841-876nm, NIR
+        blue: medianpixelsclipped.select('B2')    // 459-479nm, BLUE
+    });
+
+// Visualization parameters 
+var visParams = {bands: ['B8', 'B4', 'B3'], max: 3048, gamma: 1};
+var visParams_ndvi = {min: -0.2, max: 0.8, palette: 'FFFFFF, CE7E45, DF923D, F1B555, FCD163, 99B718, 74A901, 66A000, 529400,' +
+    '3E8601, 207401, 056201, 004C00, 023B01, 012E01, 011D01, 011301'};
+    
+// Map results
+Map.centerObject(GB,7);
+Map.addLayer(ndvi,visParams_ndvi,'Sentinel-2 NDVI');
+Map.addLayer(evi,visParams_evi,'Sentinel-2 EVI');
+Map.addLayer(ndwi,visParams_ndvi,'Sentinel-2 NDWI');
+// Export image
+Export.image.toDrive({
+  image: ndvi,
+  // image: medianpixelsclipped.select('B8', 'B4', 'B3'),
+  description: 'Sentinel_NDVI_DF',
+  scale: 28,
+  maxPixels: 1e11,
+  folder: 'GEE',
+  fileFormat: 'GeoTIFF',
+  region: GB,
+});

@@ -1,0 +1,66 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var AOI = 
+    /* color: #98ff00 */
+    /* shown: false */
+    /* displayProperties: [
+      {
+        "type": "rectangle"
+      }
+    ] */
+    ee.Geometry.Polygon(
+        [[[74.31857976462292, 35.9479860583741],
+          [74.31857976462292, 35.8370113935959],
+          [74.55821904684949, 35.8370113935959],
+          [74.55821904684949, 35.9479860583741]]], null, false);
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+print(ee.Image('LANDSAT/LC08/C01/T1_TOA/LC08_150035_20191204'));
+// Store a number in a variable.
+var number = 50;
+print('The answer is:', number);
+// Use square brackets [] to make a list.
+var listOfNumbers = [0, 5, 1, 1, 1, 9];
+print('List of numbers:', listOfNumbers);
+
+// Use curly brackets {} to make a dictionary of key:value pairs.
+var HVRA = {
+  landslide: 'rock fall',
+  NumerOfLandslides: 12,
+  Element_Risk: ['hospital', 'school', 'shops']
+};
+print('Data Source:HVRA', HVRA);
+// Access dictionary items using square brackets.
+print('Type of landslide:', HVRA ['landslide']);
+// Access dictionary items using dot notation.
+print('Element_Risk:', HVRA.Element_Risk);
+
+
+// The reflect function takes a single parameter: element.
+var reflect = function(element) {
+  // Return the argument.
+  return element;
+};
+print('A good day to you!', reflect('Back at you!'));
+
+
+// //get the values for all pixels in each point in the training
+// var points = medianpixelsclipped.sampleRegions({
+//   collection: landuse, 
+//   properties: ['landcover'],
+//   tileScale: 10,
+//   scale: 10
+// }).randomColumn();
+
+
+var collection = ee.Image(ee.ImageCollection('LANDSAT/LC08/C01/T1_TOA')
+.filterBounds(AOI)
+.filterDate('2019-04-01', '2019-12-30')
+.filterMetadata('CLOUD_COVER','less_than',10));
+
+print(collection);
+// A function to compute NDVI.
+var NDVI = function(image) {
+  return image.expression('float(b("B4") - b("B3")) / (b("B4") + b("B3"))');
+};
+print(NDVI)
+Map.addLayer(collection.map(NDVI).mean(),'NDVI');
+
