@@ -1,7 +1,7 @@
 # Welcome To AKAH-Virtual-learning
 
 
-An initiative of AKAH Pakistan providing a virtual learning opportunity. 
+An initiative of AKAH Pakistan. 
 
 
 [Click on this link to access Google Earth Engine Reposatory](https://code.earthengine.google.com/?accept_repo=users/gomalamin/AKAH)
